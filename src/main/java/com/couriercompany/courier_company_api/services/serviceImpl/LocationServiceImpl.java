@@ -27,7 +27,7 @@ public class LocationServiceImpl implements LocationService {
     private final LocationRepository locationRepository;
 
     //@Value("${api_key}")
-    private final String apiKey = "AIzaSyA5qOOgX3aLxhcssMjsfCjB2SbtarQuiP8";
+    private final String apiKey = "";
 
     //@Value("${cost_per_package_per_kilometer}")
     private final double costPerKm = 1.0;
@@ -111,14 +111,11 @@ public class LocationServiceImpl implements LocationService {
         List<OptimalDistancePojo> optimalDistancePojoList = new ArrayList<>();
 
         Arrays.stream(directionsResult.routes).forEach(v -> {
+            OptimalDistancePojo optimalDistancePojo = new OptimalDistancePojo();
             if(isBestRoute){
-                OptimalDistancePojo optimalDistancePojo = new OptimalDistancePojo();
                 optimalDistancePojo.setDistanceInMeters(showShortestRoute(v.legs));
 
-                optimalDistancePojoList.add(optimalDistancePojo);
-
             }else{
-                OptimalDistancePojo optimalDistancePojo = new OptimalDistancePojo();
                 optimalDistancePojo.setSummary(v.summary);
 
                 Arrays.stream(v.legs).forEach(y -> {
@@ -126,8 +123,8 @@ public class LocationServiceImpl implements LocationService {
                     optimalDistancePojo.setDistanceInKm(y.distance.humanReadable);
                 });
 
-                optimalDistancePojoList.add(optimalDistancePojo);
             }
+            optimalDistancePojoList.add(optimalDistancePojo);
         });
 
         return optimalDistancePojoList;
