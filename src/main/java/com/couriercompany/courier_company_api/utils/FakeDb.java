@@ -21,20 +21,34 @@ public class FakeDb {
         return argument -> {
             if(!locationRepository.existsById(1L)) {
                 Location location1 = Location.builder()
-                        .name("National Stadium")
+                        .name("National Stadium, Lagos, Nigeria")
                         .locationType(LocationType.ORIGIN)
                         .longitude(6.4999)
                         .latitude(3.3609)
                         .build();
 
                 Location location2 = Location.builder()
-                        .name("Oriental Hotel")
+                        .name("Oriental Hotel, Nigeria")
                         .locationType(LocationType.DESTINATION)
                         .longitude(6.4358)
                         .latitude(3.4447)
                         .build();
 
-                List<Location> locations = List.of(location1,location2);
+                Location location3 = Location.builder()
+                        .name("White House, America")
+                        .locationType(LocationType.ORIGIN)
+                        .longitude(38.8977)
+                        .latitude(77.0365)
+                        .build();
+
+                Location location4 = Location.builder()
+                        .name("Dealey Plaza, Texas, America")
+                        .locationType(LocationType.DESTINATION)
+                        .longitude(32.7788)
+                        .latitude(96.8083)
+                        .build();
+
+                List<Location> locations = List.of(location1,location2, location3, location4);
                 locationRepository.saveAll(locations);
             }
         };

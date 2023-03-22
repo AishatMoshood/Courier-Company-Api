@@ -1,8 +1,6 @@
 package com.couriercompany.courier_company_api.controllers;
 
-import com.couriercompany.courier_company_api.entities.Location;
 import com.couriercompany.courier_company_api.entities.Route;
-import com.couriercompany.courier_company_api.pojos.OptimalDistancePojo;
 import com.couriercompany.courier_company_api.services.LocationService;
 import com.google.maps.errors.ApiException;
 import com.google.maps.model.DirectionsResult;
@@ -15,10 +13,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/courier-company")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class LocationController {
 
@@ -35,10 +32,10 @@ public class LocationController {
     }
 
     @GetMapping("/intermediate-locations")
-    public ResponseEntity<List<OptimalDistancePojo>> getIntermediateLocations(@RequestParam String originName,
-                                                                              @RequestParam String destinationName,
-                                                                              @RequestParam Boolean isBestRoute) throws Exception {
-        List<OptimalDistancePojo> intermediateLocations = locationService.getIntermediateLocations(originName, destinationName, isBestRoute);
+    public ResponseEntity<DirectionsResult> getIntermediateLocations(@RequestParam String originName,
+                                                                              @RequestParam String destinationName
+                                                                              ) throws Exception {
+        DirectionsResult intermediateLocations = locationService.getIntermediateLocations(originName, destinationName);
         return new ResponseEntity<>(intermediateLocations, HttpStatus.OK);
     }
 }

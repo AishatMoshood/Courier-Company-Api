@@ -22,14 +22,11 @@ public class Location extends BaseEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "parcel_id")
-    private Parcel parcel;
-
     private Double latitude;
 
     private Double longitude;
 
+    @Enumerated(EnumType.STRING)
     private LocationType locationType;
 
     public Location(String name, Double latitude, Double longitude) {

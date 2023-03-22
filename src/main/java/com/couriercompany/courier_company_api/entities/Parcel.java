@@ -22,11 +22,7 @@ public class Parcel extends BaseEntity {
 
     @JsonIgnore
     @OneToOne(mappedBy = "parcel", cascade = CascadeType.ALL)
-    private Location origin;
-
-    @JsonIgnore
-    @OneToOne(mappedBy = "parcel", cascade = CascadeType.ALL)
-    private Location destination;
+    private Delivery delivery;
 
     private DeliveryStatus deliveryStatus;
 }

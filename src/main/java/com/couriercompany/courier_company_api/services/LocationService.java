@@ -2,8 +2,8 @@ package com.couriercompany.courier_company_api.services;
 
 import com.couriercompany.courier_company_api.entities.Location;
 import com.couriercompany.courier_company_api.entities.Route;
-import com.couriercompany.courier_company_api.pojos.OptimalDistancePojo;
 import com.google.maps.errors.ApiException;
+import com.google.maps.model.DirectionsResult;
 
 import java.io.IOException;
 import java.util.List;
@@ -13,7 +13,7 @@ public interface LocationService {
 
     Location getLocation(String locationName) throws ApiException, InterruptedException, IOException;
 
-    List<OptimalDistancePojo> getIntermediateLocations(String origin, String destination, Boolean isBestRoute) throws Exception;
+    DirectionsResult getIntermediateLocations(String origin, String destination2) throws Exception;
 
     double calculateDistance(List<Location> locations);
 

@@ -2,23 +2,19 @@ package com.couriercompany.courier_company_api.services.serviceImpl;
 
 import com.couriercompany.courier_company_api.entities.Location;
 import com.couriercompany.courier_company_api.entities.Route;
-import com.couriercompany.courier_company_api.enums.LocationType;
-import com.couriercompany.courier_company_api.pojos.OptimalDistancePojo;
+import com.couriercompany.courier_company_api.pojos.OptimalRoutePojo;
 import com.couriercompany.courier_company_api.repositories.LocationRepository;
 import com.couriercompany.courier_company_api.services.LocationService;
 import com.google.maps.DirectionsApi;
-import com.google.maps.DirectionsApiRequest;
 import com.google.maps.GeoApiContext;
 import com.google.maps.GeocodingApi;
 import com.google.maps.errors.ApiException;
 import com.google.maps.model.*;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -27,7 +23,7 @@ public class LocationServiceImpl implements LocationService {
     private final LocationRepository locationRepository;
 
     //@Value("${api_key}")
-    private final String apiKey = "";
+    private final String apiKey = "AIzaSyA5qOOgX3aLxhcssMjsfCjB2SbtarQuiP8";
 
     //@Value("${cost_per_package_per_kilometer}")
     private final double costPerKm = 1.0;
@@ -38,7 +34,6 @@ public class LocationServiceImpl implements LocationService {
         Location origin = getLocation(originName);
         Location destination = getLocation(destinationName);
 
-//        List<Location> intermediateLocations = getIntermediateLocations(origin, destination);
         List<Location> intermediateLocations = null;
 
         double distanceInKm = calculateDistance(intermediateLocations);
@@ -77,7 +72,7 @@ public class LocationServiceImpl implements LocationService {
     }
 
     @Override
-    public  List<OptimalDistancePojo> getIntermediateLocations(String origin, String destination, Boolean isBestRoute) throws
+    public  DirectionsResult getIntermediateLocations(String origin, String destination) throws
             Exception {
 
 //        Location locationOrigin = locationRepository.findLocationByName(origin).orElseThrow(()-> new Exception("Location origin not found."));
@@ -97,8 +92,6 @@ public class LocationServiceImpl implements LocationService {
         LatLng lngDestination = new LatLng(6.4999, 3.3609);
         LatLng lngOrigin = new LatLng(6.4358, 3.4447);
 
-//        com.google.maps.model.LatLng destinationLatLng = destinationResults[0].geometry.location;
-
         // execute Directions API request for intermediate locations
         DirectionsResult directionsResult = DirectionsApi.newRequest(context)
                 .origin(lngOrigin)
@@ -108,37 +101,45 @@ public class LocationServiceImpl implements LocationService {
                 .mode(TravelMode.DRIVING)
                 .await();
 
-        List<OptimalDistancePojo> optimalDistancePojoList = new ArrayList<>();
+        List<OptimalRoutePojo> optimalRoutePojoList = new ArrayList<>();
 
-        Arrays.stream(directionsResult.routes).forEach(v -> {
-            OptimalDistancePojo optimalDistancePojo = new OptimalDistancePojo();
-            if(isBestRoute){
-                optimalDistancePojo.setDistanceInMeters(showShortestRoute(v.legs));
+//        Arrays.stream(directionsResult.routes).forEach(route -> {
+//            OptimalDistancePojo optimalDistancePojo = new OptimalDistancePojo();
+////            if(isBestRoute){
+//                optimalDistancePojo.setDistanceInMeters(showShortestRoute(route.legs));
+//
+////            }else{
+//                optimalDistancePojo.setRouteName(route.summary);
+//
+//                Arrays.stream(route.legs).forEach(leg -> {
+//                    optimalDistancePojo.setDistanceInMeters(leg.distance.inMeters);
+//                    optimalDistancePojo.setDistanceInKm(leg.distance.humanReadable);
+//                });
+//
+////            }
+//            optimalDistancePojoList.add(optimalDistancePojo);
+//        });
 
-            }else{
-                optimalDistancePojo.setSummary(v.summary);
-
-                Arrays.stream(v.legs).forEach(y -> {
-                    optimalDistancePojo.setDistanceInMeters(y.distance.inMeters);
-                    optimalDistancePojo.setDistanceInKm(y.distance.humanReadable);
-                });
-
-            }
-            optimalDistancePojoList.add(optimalDistancePojo);
-        });
-
-        return optimalDistancePojoList;
+        return directionsResult;
     }
 
-    private Long showShortestRoute(DirectionsLeg[] directionsLegs){
-        Long directionsLeg = directionsLegs[0].distance.inMeters;
-
-        for(int i = 1; i < directionsLegs.length; i++){
-            if(directionsLegs[i].distance.inMeters < directionsLeg)
-                directionsLeg = directionsLegs[i].distance.inMeters;
-        }
-        return directionsLeg;
-    }
+//    private Long showShortestRoute(DirectionsResult directionsResult, DirectionsLeg[] directionsLegs){
+//        OptimalDistancePojo optimalDistancePojo = new OptimalDistancePojo();
+//        Long distanceInMeters = directionsLegs[0].distance.inMeters;
+//
+//        for(int i = 1; i < directionsLegs.length; i++){
+//            if(directionsLegs[i].distance.inMeters < distanceInMeters)
+//                distanceInMeters = directionsLegs[i].distance.inMeters;
+//
+////                optimalDistancePojo.setSummary(directionsLegs[i].);
+//                optimalDistancePojo.setDistanceInKm(distanceInMeters / 1000);
+//                optimalDistancePojo.setDuration(String.valueOf(directionsLegs[i].durationInTraffic));
+//        }
+//
+//
+//        optimalDistancePojo.setDistanceInMeters();
+//        return directionsLeg;
+//    }
 
     @Override
     public double calculateDistance(List<Location> locations) {

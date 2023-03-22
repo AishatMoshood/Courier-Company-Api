@@ -33,17 +33,7 @@ public class Person extends BaseEntity{
     @Column(nullable = false)
     private String password;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Gender gender;
-
-    private String date_of_birth;
-
-    private String phone;
-
     private Boolean verificationStatus;
-
-    private boolean isActive = true;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -52,13 +42,5 @@ public class Person extends BaseEntity{
     @JsonIgnore
     @OneToOne(mappedBy = "person", cascade = CascadeType.ALL)
     private Staff staff;
-
-//    @JsonIgnore
-//    @OneToOne(mappedBy = "person", cascade = CascadeType.ALL)
-//    private SuperAdmin superAdmin;
-
-//    @JsonIgnore
-//    @OneToOne(mappedBy = "person", cascade = CascadeType.ALL)
-//    private Customer customer;
 }
 
