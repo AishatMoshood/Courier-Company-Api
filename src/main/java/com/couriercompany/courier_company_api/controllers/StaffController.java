@@ -13,19 +13,19 @@ import java.io.IOException;
 
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/staff")
 @RequiredArgsConstructor
 public class StaffController {
     private final StaffService staffService;
 
-    @PostMapping("/staff/signup")
+    @PostMapping("/signup")
     public ResponseEntity<String> signup(@Valid @RequestBody SignupRequestPojo signupRequestPojo) throws AlreadyExistsException, IOException {
         staffService.signup(signupRequestPojo);
         return new ResponseEntity<>("Registration Successful! Check your mail for activation link",HttpStatus.CREATED);
     }
 
-    @GetMapping("/staff/verifyRegistration")
-    public ResponseEntity<ApiResponse> verifyAccount(@RequestParam("token") String token){
-        return customerService.verifyRegistration(token);
+    @GetMapping("/verifyRegistration")
+    public ResponseEntity<String> verifyAccount(@RequestParam("token") String token){
+        return new ResponseEntity<>(staffService.verifyRegistration(token), HttpStatus.OK);
     }
 }

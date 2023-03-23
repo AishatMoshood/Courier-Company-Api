@@ -33,6 +33,8 @@ public class Person extends BaseEntity{
     @Column(nullable = false)
     private String password;
 
+    private boolean isActive = true;
+
     private Boolean verificationStatus;
 
     @Enumerated(EnumType.STRING)

@@ -22,6 +22,10 @@ public class Location extends BaseEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id")
+    private Address address;
+
     private Double latitude;
 
     private Double longitude;

@@ -19,44 +19,37 @@ public class AppUserDetails implements UserDetails {
     private Person person;
 
     @Override
-        public Collection<? extends GrantedAuthority> getAuthorities() {
-
+    public Collection<? extends GrantedAuthority> getAuthorities() {
         return person.getRole().getGrantedAuthorities();
-        }
-
-        @Override
-        public String getPassword() {
-
-        return person.getPassword();
-        }
-
-        @Override
-        public String getUsername() {
-
-        return person.getEmail();
-        }
-
-        @Override
-        public boolean isAccountNonExpired() {
-
-        return true;
-        }
-
-        @Override
-        public boolean isAccountNonLocked() {
-
-
-        return person.isActive();
-        }
-
-        @Override
-        public boolean isCredentialsNonExpired() {
-
-        return true;
-        }
-
-        @Override
-        public boolean isEnabled() {
-        return person.getVerificationStatus();
-        }
     }
+
+    @Override
+    public String getPassword() {
+        return person.getPassword();
+    }
+
+    @Override
+    public String getUsername() {
+        return person.getEmail();
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return person.isActive();
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return person.getVerificationStatus();
+    }
+}

@@ -1,8 +1,14 @@
 package com.couriercompany.courier_company_api.services.serviceImpl;
 
+import com.couriercompany.courier_company_api.dtos.GetCoordinatesResponseDto;
+import com.couriercompany.courier_company_api.entities.Address;
 import com.couriercompany.courier_company_api.entities.Location;
 import com.couriercompany.courier_company_api.entities.Route;
+import com.couriercompany.courier_company_api.exceptions.EmptyListException;
+import com.couriercompany.courier_company_api.exceptions.InvalidOperationException;
+import com.couriercompany.courier_company_api.pojos.GetCoordinatesPojo;
 import com.couriercompany.courier_company_api.pojos.OptimalRoutePojo;
+import com.couriercompany.courier_company_api.repositories.AddressRepository;
 import com.couriercompany.courier_company_api.repositories.LocationRepository;
 import com.couriercompany.courier_company_api.services.LocationService;
 import com.google.maps.DirectionsApi;
@@ -21,12 +27,70 @@ import java.util.List;
 @AllArgsConstructor
 public class LocationServiceImpl implements LocationService {
     private final LocationRepository locationRepository;
+    private final AddressRepository addressRepository;
 
     //@Value("${api_key}")
-    private final String apiKey = "AIzaSyA5qOOgX3aLxhcssMjsfCjB2SbtarQuiP8";
+    private final String apiKey = " ";
 
     //@Value("${cost_per_package_per_kilometer}")
     private final double costPerKm = 1.0;
+
+    @Override
+    public String addLocation(GetCoordinatesPojo getCoordinatesPojo) throws IOException, InterruptedException, ApiException {
+        if(getCoordinatesPojo.getAddress().equals("") || getCoordinatesPojo.getAddress().equals("") || getCoordinatesPojo.getAddress().equals("") || getCoordinatesPojo.getAddress().equals(""))
+            throw new InvalidOperationException("Please fill in all address fields to add a new location");
+
+
+        GetCoordinatesResponseDto getCoordinatesResponseDto = getLocationCoordinates(getCoordinatesPojo);
+
+        Address address = Address.builder()
+                .street(getCoordinatesPojo.getAddress().getStreet())
+                .city(getCoordinatesPojo.getAddress().getCity())
+                .state(getCoordinatesPojo.getAddress().getState())
+                .country(getCoordinatesPojo.getAddress().getCountry())
+                .build();
+        addressRepository.save(address);
+
+        Location newLocation = Location.builder()
+                .latitude(getCoordinatesResponseDto.getLatitude())
+                .longitude(getCoordinatesResponseDto.getLongitude())
+                .locationType(getCoordinatesPojo.getLocationType())
+                .address(address)
+                .build();
+        locationRepository.save(newLocation);
+
+        return "New location saved successfully";
+    }
+
+
+
+    @Override
+    public GetCoordinatesResponseDto getLocationCoordinates(GetCoordinatesPojo getCoordinatesPojo) throws IOException, InterruptedException, ApiException {
+        // initialize GeoApiContext
+        GeoApiContext context = new GeoApiContext.Builder().apiKey(apiKey).build();
+
+        String locationName = getCoordinatesPojo.getAddress().getStreet() + ", " + getCoordinatesPojo.getAddress().getCity() + ", " + getCoordinatesPojo.getAddress().getState() + ", " + getCoordinatesPojo.getAddress().getCountry();
+
+        // execute Geocoding API request
+        GeocodingResult[] results = GeocodingApi.geocode(context, locationName).await();
+
+        // check if results array is empty
+        if (results.length == 0) {
+            throw new EmptyListException("No geocoding results found for location: " + locationName);
+        }
+
+        // get latitude and longitude of first result
+        LatLng location = results[0].geometry.location;
+        double latitude = location.lat;
+        double longitude = location.lng;
+
+        GetCoordinatesResponseDto getCoordinatesResponseDto = GetCoordinatesResponseDto.builder()
+                .latitude(latitude)
+                .longitude(longitude)
+                .build();
+
+        return getCoordinatesResponseDto;
+    }
 
 
     @Override
