@@ -31,6 +31,7 @@ public class Location extends BaseEntity {
     private Double longitude;
 
     @Enumerated(EnumType.STRING)
+    @NotNull(message = "Please select location type to continue")
     private LocationType locationType;
 
     public Location(String name, Double latitude, Double longitude) {

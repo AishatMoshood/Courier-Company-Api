@@ -1,6 +1,5 @@
 package com.couriercompany.courier_company_api.entities;
 
-import com.couriercompany.courier_company_api.enums.Gender;
 import com.couriercompany.courier_company_api.enums.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
