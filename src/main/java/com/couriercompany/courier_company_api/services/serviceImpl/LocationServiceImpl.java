@@ -5,8 +5,8 @@ import com.couriercompany.courier_company_api.entities.Address;
 import com.couriercompany.courier_company_api.entities.Location;
 import com.couriercompany.courier_company_api.entities.Route;
 import com.couriercompany.courier_company_api.exceptions.EmptyListException;
-import com.couriercompany.courier_company_api.exceptions.InvalidOperationException;
-import com.couriercompany.courier_company_api.pojos.GetCoordinatesPojo;
+import com.couriercompany.courier_company_api.exceptions.ResourceNotFoundException;
+import com.couriercompany.courier_company_api.pojos.LocationPojo;
 import com.couriercompany.courier_company_api.pojos.OptimalRoutePojo;
 import com.couriercompany.courier_company_api.repositories.AddressRepository;
 import com.couriercompany.courier_company_api.repositories.LocationRepository;
@@ -20,8 +20,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Service
 @AllArgsConstructor
@@ -30,31 +29,28 @@ public class LocationServiceImpl implements LocationService {
     private final AddressRepository addressRepository;
 
     //@Value("${api_key}")
-    private final String apiKey = " ";
+    private final String apiKey = "AIzaSyA5qOOgX3aLxhcssMjsfCjB2SbtarQuiP8";
 
     //@Value("${cost_per_package_per_kilometer}")
     private final double costPerKm = 1.0;
 
     @Override
-    public String addLocation(GetCoordinatesPojo getCoordinatesPojo) throws IOException, InterruptedException, ApiException {
-        if(getCoordinatesPojo.getAddress().equals("") || getCoordinatesPojo.getAddress().equals("") || getCoordinatesPojo.getAddress().equals("") || getCoordinatesPojo.getAddress().equals(""))
-            throw new InvalidOperationException("Please fill in all address fields to add a new location");
-
-
-        GetCoordinatesResponseDto getCoordinatesResponseDto = getLocationCoordinates(getCoordinatesPojo);
+    public String addLocation(LocationPojo addLocationPojo) throws IOException, InterruptedException, ApiException {
+        GetCoordinatesResponseDto getCoordinatesResponseDto = getLocationCoordinates(addLocationPojo);
 
         Address address = Address.builder()
-                .street(getCoordinatesPojo.getAddress().getStreet())
-                .city(getCoordinatesPojo.getAddress().getCity())
-                .state(getCoordinatesPojo.getAddress().getState())
-                .country(getCoordinatesPojo.getAddress().getCountry())
+                .street(addLocationPojo.getStreet())
+                .city(addLocationPojo.getCity())
+                .state(addLocationPojo.getState())
+                .country(addLocationPojo.getCountry())
                 .build();
         addressRepository.save(address);
 
         Location newLocation = Location.builder()
+                .name(addLocationPojo.getName())
                 .latitude(getCoordinatesResponseDto.getLatitude())
                 .longitude(getCoordinatesResponseDto.getLongitude())
-                .locationType(getCoordinatesPojo.getLocationType())
+                .locationType(addLocationPojo.getLocationType())
                 .address(address)
                 .build();
         locationRepository.save(newLocation);
@@ -62,14 +58,43 @@ public class LocationServiceImpl implements LocationService {
         return "New location saved successfully";
     }
 
+    @Override
+    public String removeLocation(Long locationId){
+      Location location = locationRepository.findById(locationId).orElseThrow(() ->
+               new ResourceNotFoundException("Location does not exist"));
+       locationRepository.delete(location);
+       return "Location deleted successfully";
+    }
+
+    public Location updateLocation(LocationPojo updateLocationPojo, Long locationId){
+        Location location = locationRepository.findById(locationId).orElseThrow(() ->
+                new ResourceNotFoundException("Location does not exist"));
+
+        Address address = Address.builder()
+                .street(updateLocationPojo.getStreet())
+                .city(updateLocationPojo.getCity())
+                .state(updateLocationPojo.getState())
+                .country(updateLocationPojo.getCountry())
+                .build();
+        addressRepository.save(address);
+
+        location.setName(updateLocationPojo.getName());
+        location.setAddress(address);
+        location.setLocationType(updateLocationPojo.getLocationType());
+        locationRepository.save(location);
+
+        return location;
+    }
 
 
     @Override
-    public GetCoordinatesResponseDto getLocationCoordinates(GetCoordinatesPojo getCoordinatesPojo) throws IOException, InterruptedException, ApiException {
+    public GetCoordinatesResponseDto getLocationCoordinates(LocationPojo locationPojo) throws IOException,
+            InterruptedException, ApiException {
         // initialize GeoApiContext
         GeoApiContext context = new GeoApiContext.Builder().apiKey(apiKey).build();
 
-        String locationName = getCoordinatesPojo.getAddress().getStreet() + ", " + getCoordinatesPojo.getAddress().getCity() + ", " + getCoordinatesPojo.getAddress().getState() + ", " + getCoordinatesPojo.getAddress().getCountry();
+        String locationName = locationPojo.getStreet() + ", " + locationPojo.getCity() + ", " +
+                locationPojo.getState() + ", " + locationPojo.getCountry();
 
         // execute Geocoding API request
         GeocodingResult[] results = GeocodingApi.geocode(context, locationName).await();
@@ -92,26 +117,107 @@ public class LocationServiceImpl implements LocationService {
         return getCoordinatesResponseDto;
     }
 
-
     @Override
-    public Route getOptimalRoute(String originName, String destinationName) throws ApiException, InterruptedException, IOException {
-        Location origin = getLocation(originName);
-        Location destination = getLocation(destinationName);
+    public OptimalRoutePojo getOptimalRoute(String origin, String destination) throws Exception {
 
-        List<Location> intermediateLocations = null;
+        Location locationOrigin = locationRepository.findLocationByName(origin.trim()).orElseThrow(()-> new Exception("Location origin not found."));
 
-        double distanceInKm = calculateDistance(intermediateLocations);
-        double cost = costPerKm * distanceInKm;
+        Location locationDestination = locationRepository.findLocationByName(destination.trim()).orElseThrow(()-> new Exception("Location destination not found."));
 
-        Route route = new Route();
-        route.setOrigin(origin);
-        route.setDestination(destination);
-        route.setIntermediateLocations(intermediateLocations);
-        route.setDistanceInKm(distanceInKm);
-        route.setCost(cost);
+        // initialize GeoApiContext
+        GeoApiContext context = new GeoApiContext.Builder().apiKey(apiKey).build();
+//
+//        // execute Geocoding API request for origin
+//        GeocodingResult[] originResults = GeocodingApi.geocode(context, origin.getName()).await();
+//        com.google.maps.model.LatLng originLatLng = originResults[0].geometry.location;
+//
+//        // execute Geocoding API request for destination
+//        GeocodingResult[] destinationResults = GeocodingApi.geocode(context, destination.getName()).await();
 
-        return route;
+//        LatLng lngDestination = new LatLng(6.4999, 3.3609);
+//        LatLng lngOrigin = new LatLng(6.4358, 3.4447);
+        LatLng lngOrigin = new LatLng(locationOrigin.getLatitude(), locationOrigin.getLatitude());
+        LatLng lngDestination = new LatLng(locationDestination.getLatitude(), locationDestination.getLatitude());
+
+        // execute Directions API request for intermediate locations
+        DirectionsResult directionsResult = DirectionsApi.newRequest(context)
+                .origin(lngOrigin)
+                .destination(lngDestination)
+                .optimizeWaypoints(Boolean.TRUE)
+                .alternatives(Boolean.TRUE)
+                .mode(TravelMode.DRIVING)
+                .await();
+//        Arrays.stream(directionsResult.routes).forEach(route -> {
+//            OptimalRoutePojo optimalRoutePojo = new OptimalRoutePojo();
+////            if(isBestRoute){
+//            optimalRoutePojo.setDistanceInMeters(showShortestRoute(route.legs));
+//
+////            }else{
+//            optimalRoutePojo.setRouteName(route.summary);
+//
+//                Arrays.stream(route.legs).forEach(leg -> {
+//                    optimalRoutePojo.setDistanceInMeters(leg.distance.inMeters);
+//                    optimalRoutePojo.setDistanceInKm(leg.distance.humanReadable);
+//                });
+//
+////            }
+//            optimalRoutePojoList.add(optimalRoutePojo);
+//        });
+        return showShortestRoute(directionsResult);
     }
+
+    private OptimalRoutePojo showShortestRoute(DirectionsResult directionsResult){
+        Map<String, Long> allRoutesBetweenOriginAndDestination = new HashMap<>();
+
+        Arrays.stream(directionsResult.routes).forEach(route -> {
+            allRoutesBetweenOriginAndDestination.put(route.summary, 0L);
+
+            Arrays.stream(route.legs).forEach(leg -> {
+                for (Map.Entry<String, Long> entry : allRoutesBetweenOriginAndDestination.entrySet()) {
+                    entry.setValue(entry.getValue() + leg.distance.inMeters);
+                }
+            });
+        });
+
+        String minDistSummary = null;
+        Long minDist = Long.MAX_VALUE;
+
+        for (Map.Entry<String, Long> entry :allRoutesBetweenOriginAndDestination.entrySet()) {
+            if (entry.getValue() < minDist) {
+                minDist = entry.getValue();
+                minDistSummary = entry.getKey();
+            }
+        }
+
+        OptimalRoutePojo optimalRoutePojo = new OptimalRoutePojo();
+        optimalRoutePojo.setDistanceInMeters(minDist);
+        optimalRoutePojo.setRouteSummary(minDistSummary);
+        optimalRoutePojo.setDistanceInKm((double) (minDist / 1000));
+        optimalRoutePojo.setDeliveryCost(costPerKm * optimalRoutePojo.getDistanceInKm());
+
+        return optimalRoutePojo;
+    }
+
+
+//    @Override
+//    public Route getOptimalRoute(String originName, String destinationName) throws ApiException, InterruptedException, IOException {
+//        Location origin = getLocation(originName);
+//        Location destination = getLocation(destinationName);
+//
+//        List<Location> intermediateLocations = null;
+//
+//        double distanceInKm = calculateDistance(intermediateLocations);
+//        double cost = costPerKm * distanceInKm;
+//
+//        Route route = new Route();
+//        route.setOrigin(origin);
+//        route.setDestination(destination);
+//        route.setIntermediateLocations(intermediateLocations);
+//        route.setDistanceInKm(distanceInKm);
+//        route.setCost(cost);
+//
+//        return route;
+//    }
 
 
     @Override
@@ -134,76 +240,6 @@ public class LocationServiceImpl implements LocationService {
 
         return new Location(locationName, latitude, longitude);
     }
-
-    @Override
-    public  DirectionsResult getIntermediateLocations(String origin, String destination) throws
-            Exception {
-
-//        Location locationOrigin = locationRepository.findLocationByName(origin).orElseThrow(()-> new Exception("Location origin not found."));
-//
-//        Location locationDestination = locationRepository.findLocationByName(destination).orElseThrow(()-> new Exception("Location destination not found."));
-
-        // initialize GeoApiContext
-        GeoApiContext context = new GeoApiContext.Builder().apiKey(apiKey).build();
-
-//        // execute Geocoding API request for origin
-//        GeocodingResult[] originResults = GeocodingApi.geocode(context, origin.getName()).await();
-//        com.google.maps.model.LatLng originLatLng = originResults[0].geometry.location;
-//
-//        // execute Geocoding API request for destination
-//        GeocodingResult[] destinationResults = GeocodingApi.geocode(context, destination.getName()).await();
-
-        LatLng lngDestination = new LatLng(6.4999, 3.3609);
-        LatLng lngOrigin = new LatLng(6.4358, 3.4447);
-
-        // execute Directions API request for intermediate locations
-        DirectionsResult directionsResult = DirectionsApi.newRequest(context)
-                .origin(lngOrigin)
-                .destination(lngDestination)
-                .optimizeWaypoints(Boolean.TRUE)
-                .alternatives(Boolean.TRUE)
-                .mode(TravelMode.DRIVING)
-                .await();
-
-        List<OptimalRoutePojo> optimalRoutePojoList = new ArrayList<>();
-
-//        Arrays.stream(directionsResult.routes).forEach(route -> {
-//            OptimalDistancePojo optimalDistancePojo = new OptimalDistancePojo();
-////            if(isBestRoute){
-//                optimalDistancePojo.setDistanceInMeters(showShortestRoute(route.legs));
-//
-////            }else{
-//                optimalDistancePojo.setRouteName(route.summary);
-//
-//                Arrays.stream(route.legs).forEach(leg -> {
-//                    optimalDistancePojo.setDistanceInMeters(leg.distance.inMeters);
-//                    optimalDistancePojo.setDistanceInKm(leg.distance.humanReadable);
-//                });
-//
-////            }
-//            optimalDistancePojoList.add(optimalDistancePojo);
-//        });
-
-        return directionsResult;
-    }
-
-//    private Long showShortestRoute(DirectionsResult directionsResult, DirectionsLeg[] directionsLegs){
-//        OptimalDistancePojo optimalDistancePojo = new OptimalDistancePojo();
-//        Long distanceInMeters = directionsLegs[0].distance.inMeters;
-//
-//        for(int i = 1; i < directionsLegs.length; i++){
-//            if(directionsLegs[i].distance.inMeters < distanceInMeters)
-//                distanceInMeters = directionsLegs[i].distance.inMeters;
-//
-////                optimalDistancePojo.setSummary(directionsLegs[i].);
-//                optimalDistancePojo.setDistanceInKm(distanceInMeters / 1000);
-//                optimalDistancePojo.setDuration(String.valueOf(directionsLegs[i].durationInTraffic));
-//        }
-//
-//
-//        optimalDistancePojo.setDistanceInMeters();
-//        return directionsLeg;
-//    }
 
     @Override
     public double calculateDistance(List<Location> locations) {

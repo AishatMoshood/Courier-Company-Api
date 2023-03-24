@@ -1,6 +1,5 @@
 package com.couriercompany.courier_company_api.dtos;
 
-import com.couriercompany.courier_company_api.enums.Gender;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

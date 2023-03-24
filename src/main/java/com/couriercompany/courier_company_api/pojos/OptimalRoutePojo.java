@@ -6,9 +6,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class OptimalRoutePojo {
-    private String routeName;
+    private String routeSummary;
     private Long distanceInMeters;
-    private Long distanceInKm;
+    private Double distanceInKm;
     private String duration;
     private Double deliveryCost;
 }
