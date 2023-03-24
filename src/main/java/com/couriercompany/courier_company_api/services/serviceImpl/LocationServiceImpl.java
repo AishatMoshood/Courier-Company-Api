@@ -37,9 +37,8 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     public String addLocation(GetCoordinatesPojo getCoordinatesPojo) throws IOException, InterruptedException, ApiException {
-        if(getCoordinatesPojo.getAddress().equals("") || getCoordinatesPojo.getAddress().equals("") || getCoordinatesPojo.getAddress().equals("") || getCoordinatesPojo.getAddress().equals(""))
+        if(getCoordinatesPojo.getAddress().getStreet().equals("") || getCoordinatesPojo.getAddress().getCity().equals("") || getCoordinatesPojo.getAddress().getState().equals("") || getCoordinatesPojo.getAddress().getCountry().equals("") || getCoordinatesPojo.getLocationType().equals(""))
             throw new InvalidOperationException("Please fill in all address fields to add a new location");
-
 
         GetCoordinatesResponseDto getCoordinatesResponseDto = getLocationCoordinates(getCoordinatesPojo);
 
@@ -62,8 +61,6 @@ public class LocationServiceImpl implements LocationService {
         return "New location saved successfully";
     }
 
-
-
     @Override
     public GetCoordinatesResponseDto getLocationCoordinates(GetCoordinatesPojo getCoordinatesPojo) throws IOException, InterruptedException, ApiException {
         // initialize GeoApiContext
@@ -84,12 +81,10 @@ public class LocationServiceImpl implements LocationService {
         double latitude = location.lat;
         double longitude = location.lng;
 
-        GetCoordinatesResponseDto getCoordinatesResponseDto = GetCoordinatesResponseDto.builder()
+        return GetCoordinatesResponseDto.builder()
                 .latitude(latitude)
                 .longitude(longitude)
                 .build();
-
-        return getCoordinatesResponseDto;
     }
 
 

@@ -42,7 +42,7 @@ public class JavaMailServiceImpl implements JavaMailService {
         isEmailDomainValid(receiverEmail);
 
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("funitureoakland@gmail.com");
+        message.setFrom("aishatmoshood1@gmail.com");
         message.setTo(receiverEmail);
         message.setSentDate(new Date());
         message.setSubject(subject);
