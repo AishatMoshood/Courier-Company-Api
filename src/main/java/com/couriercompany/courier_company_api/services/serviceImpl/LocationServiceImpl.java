@@ -28,7 +28,7 @@ public class LocationServiceImpl implements LocationService {
     private final AddressRepository addressRepository;
 
     //@Value("${api_key}")
-    private final String apiKey = "AIzaSyA5qOOgX3aLxhcssMjsfCjB2SbtarQuiP8";
+    private final String apiKey = "";
 
     //@Value("${cost_per_package_per_kilometer}")
     private final double costPerKm = 1.0;
