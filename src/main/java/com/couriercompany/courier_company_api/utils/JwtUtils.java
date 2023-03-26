@@ -12,7 +12,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 public class JwtUtils {
     private final JwtAuthenticationProvider refreshTokenAuthProvider;
 
-
     public String extractUsername(String token) {
         BearerTokenAuthenticationToken authenticationToken = new BearerTokenAuthenticationToken(token);
         Authentication authentication = refreshTokenAuthProvider.authenticate(authenticationToken);

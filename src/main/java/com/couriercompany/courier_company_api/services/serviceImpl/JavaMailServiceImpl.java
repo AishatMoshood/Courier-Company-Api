@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.SimpleMailMessage;
@@ -32,22 +33,23 @@ public class JavaMailServiceImpl implements JavaMailService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CourierCompanyApiApplication.class);
     private static final Marker IMPORTANT = MarkerFactory.getMarker("IMPORTANT");
 
+    @Value("${mail.address}")
+    private String mailAddress;
+
 
     @Override
-    public ResponseEntity<String> sendMail(String receiverEmail, String subject, String text) throws IOException {
-
+    public ResponseEntity<String> sendMail(String receiverEmail, String subject, String text) {
         if (!isValidEmail(receiverEmail))
             new ResponseEntity<>("Email is not valid", HttpStatus.BAD_REQUEST);
 
         isEmailDomainValid(receiverEmail);
 
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("aishatmoshood1@gmail.com");
+        message.setFrom(mailAddress);
         message.setTo(receiverEmail);
         message.setSentDate(new Date());
         message.setSubject(subject);
         message.setText(text);
-
 
         try {
             LOGGER.info("Beginning of log *********");
@@ -60,12 +62,14 @@ public class JavaMailServiceImpl implements JavaMailService {
 
         return new ResponseEntity<>("An Error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
     public boolean isValidEmail(String email) {
         String regexPattern = "^(.+)@(\\S+)$";
         return Pattern.compile(regexPattern)
                 .matcher(email)
                 .matches();
     }
+
     public void isEmailDomainValid(String email) {
         try {
             String domain = email.substring(email.lastIndexOf('@') + 1);
@@ -76,6 +80,7 @@ public class JavaMailServiceImpl implements JavaMailService {
             LOGGER.error(e.getMessage());
         }
     }
+
     public int doLookup(String hostName) throws NamingException {
         Hashtable<String, String> env = new Hashtable<>();
         env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
@@ -86,9 +91,7 @@ public class JavaMailServiceImpl implements JavaMailService {
         return( attr.size() );
     }
 
-
     public ResponseEntity<String> sendMailAlt(String receiverEmail, String subject, String text) {
-
         if (!isValidEmail(receiverEmail))
         new ResponseEntity<>("Email is not valid", HttpStatus.BAD_REQUEST);
 
@@ -96,7 +99,7 @@ public class JavaMailServiceImpl implements JavaMailService {
 
         MimeMessagePreparator messagePreparator = mimeMessage -> {
             MimeMessageHelper message = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-            message.setFrom("funitureoakland@gmail.com");
+            message.setFrom(mailAddress);
             message.setTo(receiverEmail);
             message.setSubject(subject);
             message.setText(text, true);

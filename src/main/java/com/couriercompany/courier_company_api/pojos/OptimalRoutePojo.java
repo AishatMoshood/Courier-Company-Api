@@ -1,6 +1,5 @@
 package com.couriercompany.courier_company_api.pojos;
 
-import com.couriercompany.courier_company_api.entities.Location;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,5 +12,5 @@ public class OptimalRoutePojo {
     private Double distanceInMeters;
     private Double distanceInKm;
     private String duration;
-    private Double deliveryCost;
+    private Double deliveryCostInDollars;
 }

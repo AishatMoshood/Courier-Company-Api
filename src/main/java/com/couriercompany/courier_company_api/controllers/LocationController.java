@@ -1,7 +1,6 @@
 package com.couriercompany.courier_company_api.controllers;
 
 import com.couriercompany.courier_company_api.dtos.LocationResponseDto;
-import com.couriercompany.courier_company_api.entities.Location;
 import com.couriercompany.courier_company_api.pojos.LocationPojo;
 import com.couriercompany.courier_company_api.pojos.OptimalRoutePojo;
 import com.couriercompany.courier_company_api.services.LocationService;
@@ -21,18 +20,18 @@ public class LocationController {
 
     private final LocationService locationService;
 
-    @PostMapping("/add-location")
+    @PostMapping("/add")
     public ResponseEntity<String> addLocation(@RequestBody LocationPojo locationPojo) throws IOException, InterruptedException, ApiException {
       return new ResponseEntity<>(locationService.addLocation(locationPojo), HttpStatus.CREATED);
     }
 
-    @PutMapping("/update-location/{locationId}")
+    @PutMapping("/update/{locationId}")
     public ResponseEntity<String> updateLocation(@RequestBody LocationPojo updateLocationPojo,
                                                    @PathVariable Long locationId) throws IOException, InterruptedException, ApiException {
         return new ResponseEntity<>(locationService.updateLocation(updateLocationPojo, locationId), HttpStatus.OK);
     }
 
-    @DeleteMapping("/delete-location/{locationId}")
+    @DeleteMapping("/delete/{locationId}")
     public ResponseEntity<String> deleteLocation(@PathVariable Long locationId){
         return new ResponseEntity<>(locationService.removeLocation(locationId), HttpStatus.OK);
     }

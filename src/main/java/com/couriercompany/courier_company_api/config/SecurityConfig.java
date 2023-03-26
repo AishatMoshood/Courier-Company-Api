@@ -28,6 +28,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import java.util.Collection;
 import java.util.Collections;
 
+import static com.couriercompany.courier_company_api.enums.Role.STAFF;
+import static com.couriercompany.courier_company_api.enums.Role.SUPER_ADMIN;
+
 
 @Configuration
 @EnableWebSecurity
@@ -58,6 +61,7 @@ public class SecurityConfig {
         }).and().csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((auth) -> {
                 auth.antMatchers(WHITE_LISTED_URLS).permitAll()
+                        .antMatchers("/api/v1/location/**").hasAnyRole(STAFF.name(), SUPER_ADMIN.name())
                         .anyRequest().authenticated();
                 })
                 .oauth2ResourceServer(oauth2ResourceServer ->

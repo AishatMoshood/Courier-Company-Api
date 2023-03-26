@@ -38,10 +38,13 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     public String addLocation(LocationPojo addLocationPojo) throws IOException, InterruptedException, ApiException {
-        if(!personService.confirmAuthority()) throw new UnauthorizedException("You are NOT AUTHORIZED to perform this operation");
+        //Checking if user is logged in
+        if(!personService.confirmIfUserLoggedIn()) throw new UnauthorizedException("You are NOT AUTHORIZED to perform this operation");
 
+        //Checking if the location being added already exists
         if(locationRepository.existsByName(addLocationPojo.getName().trim().toUpperCase())) {throw new AlreadyExistsException("This location name already exists");}
 
+        //Creating the address object from the requestPojo
         Address address = Address.builder()
                 .street(addLocationPojo.getStreet().trim().toUpperCase())
                 .city(addLocationPojo.getCity().trim().toUpperCase())
@@ -49,11 +52,15 @@ public class LocationServiceImpl implements LocationService {
                 .country(addLocationPojo.getCountry().trim().toUpperCase())
                 .build();
 
+        //else save the address
         addressRepository.save(address);
+        //Checking the address already exists
         if(locationRepository.existsByAddress(address)) {throw new AlreadyExistsException("This location address already exists");}
 
+        //Getting the longitude and latitude from the getLocationCoordinates() method
         GetCoordinatesResponseDto getCoordinatesResponseDto = getLocationCoordinates(addLocationPojo);
 
+        //Creating the location object
         Location newLocation = Location.builder()
                 .name(addLocationPojo.getName().trim().toUpperCase())
                 .latitude(getCoordinatesResponseDto.getLatitude())
@@ -61,6 +68,7 @@ public class LocationServiceImpl implements LocationService {
                 .locationType(addLocationPojo.getLocationType())
                 .address(address)
                 .build();
+        //saving the location
         locationRepository.save(newLocation);
 
         return "New location saved successfully";
@@ -68,8 +76,10 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     public String removeLocation(Long locationId){
-        if(!personService.confirmAuthority()) throw new UnauthorizedException("You are NOT AUTHORIZED to perform this operation");
+        //Checking if user is logged in
+        if(!personService.confirmIfUserLoggedIn()) throw new UnauthorizedException("You are NOT AUTHORIZED to perform this operation");
 
+        //Check if location exists
       Location location = locationRepository.findById(locationId).orElseThrow(() ->
                new ResourceNotFoundException("Location does not exist"));
        locationRepository.delete(location);
@@ -79,13 +89,15 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     public String updateLocation(LocationPojo updateLocationPojo, Long locationId) throws IOException, InterruptedException, ApiException {
-        if(!personService.confirmAuthority()) throw new UnauthorizedException("You are NOT AUTHORIZED to perform this operation");
+        //Checking if user is logged in
+        if(!personService.confirmIfUserLoggedIn()) throw new UnauthorizedException("You are NOT AUTHORIZED to perform this operation");
 
         Location location = locationRepository.findById(locationId).orElseThrow(() ->
                 new ResourceNotFoundException("Location does not exist"));
         Address address = addressRepository.findByLocationId(locationId).orElseThrow(() ->
                 new ResourceNotFoundException("Location does not exist"));
 
+        //get location coordinates
         GetCoordinatesResponseDto getCoordinatesResponseDto = getLocationCoordinates(updateLocationPojo);
 
         address.setStreet(updateLocationPojo.getStreet().trim().toUpperCase());
@@ -106,8 +118,10 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     public Page<LocationResponseDto> getAllLocations(Integer pageNo, Integer pageSize, String sortingField, boolean isAscending){
-        if(!personService.confirmAuthority()) throw new UnauthorizedException("You are NOT AUTHORIZED to perform this operation");
+        //Check if user is logged in/ authorized
+        if(!personService.confirmIfUserLoggedIn()) throw new UnauthorizedException("You are NOT AUTHORIZED to perform this operation");
 
+        //Check if there are locations at all
         if(locationRepository.findAll().isEmpty()) throw new EmptyListException("No locations found");
 
         return locationRepository.findAll(PageRequest.of(pageNo, pageSize,
@@ -116,18 +130,26 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     public OptimalRoutePojo getOptimalRoute(String origin, String destination) throws Exception {
-        if(!personService.confirmAuthority()) throw new UnauthorizedException("You are NOT AUTHORIZED to perform this operation");
 
+        //Check if user is logged in
+        if(!personService.confirmIfUserLoggedIn()) throw new UnauthorizedException("You are NOT AUTHORIZED to perform this operation");
+
+        //Check if there any locations
         if(locationRepository.findAll().isEmpty()) throw new EmptyListException("No locations found, add at least 3 locations to generate an optimal route, so as to start delivery");
 
+        //Before delivery can start, check if locations are up to 3
         if(locationRepository.findAll().size() < 3) throw new EmptyListException("Add at least 3 locations to generate an optimal route, so as to start delivery");
 
+        //Check if origin and destination are empty
         if(origin.equals("") || destination.equals("")) throw new CannotBeEmptyException("Origin or Location name cannot be empty");
 
+        //Find location in db
         Location locationOrigin = locationRepository.findLocationByName(origin.trim().toUpperCase()).orElseThrow(()-> new NotAvailableException("Location origin not found"));
 
+        //Check type of location
         if(locationOrigin.getLocationType().equals(LocationType.DESTINATION)) throw new InputMismatchException("This location is not an origin");
 
+        //Check if origin and destination are not same
         if(origin.equalsIgnoreCase(destination)) throw new InputMismatchException("Origin and destination cannot be the same");
 
         Location locationDestination = locationRepository.findLocationByName(destination.trim().toUpperCase()).orElseThrow(()-> new NotAvailableException("Location destination not found."));
@@ -183,9 +205,12 @@ public class LocationServiceImpl implements LocationService {
     }
 
     private OptimalRoutePojo showShortestRoute(DirectionsResult directionsResult){
+        //Initialize object that'll be returned
         OptimalRoutePojo optimalRoutePojo = new OptimalRoutePojo();
+        //Intialize map that'll contains routeSummary and distance
         Map<String, Long> allRoutesBetweenOriginAndDestination = new HashMap<>();
 
+        //Loop over directionsresult from google maps api
         Arrays.stream(directionsResult.routes).forEach(route -> {
             allRoutesBetweenOriginAndDestination.put(route.summary, 0L);
 
@@ -207,15 +232,17 @@ public class LocationServiceImpl implements LocationService {
             }
         }
 
+        //Save results in intialized object
         optimalRoutePojo.setDistanceInMeters((double) minDist);
         optimalRoutePojo.setRouteSummary(minDistSummary);
         optimalRoutePojo.setDistanceInKm(minDist / 1000.0);
-        optimalRoutePojo.setDeliveryCost(costPerKm * optimalRoutePojo.getDistanceInKm());
+        optimalRoutePojo.setDeliveryCostInDollars(costPerKm * optimalRoutePojo.getDistanceInKm());
 
         return optimalRoutePojo;
     }
 
     private LocationResponseDto responseMapper(Location location) {
+        //Map location to its response
         return LocationResponseDto.builder()
                 .name(location.getName())
                 .address(location.getAddress())

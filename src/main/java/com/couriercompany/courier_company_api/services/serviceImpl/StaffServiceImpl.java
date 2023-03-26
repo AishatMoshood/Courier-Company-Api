@@ -53,12 +53,15 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional
     public SignupResponseDto signup(SignupRequestPojo signupRequestPojo) throws AlreadyExistsException, IOException {
+        //Check if inputted email in db
         boolean emailExist = personRepository.existsByEmail(signupRequestPojo.getEmail());
         if (emailExist)
             throw new AlreadyExistsException("This Email address already exists");
 
+        //Initialize staff object
         Staff staff = new Staff();
 
+        //Save provided details in a person object
         Person person =  Person.builder()
                 .firstName(signupRequestPojo.getFirstName())
                 .lastName(signupRequestPojo.getLastName())
@@ -74,6 +77,7 @@ public class StaffServiceImpl implements StaffService {
         personRepository.save(person);
         staffRepository.save(staff);
 
+        //Generate Token
         String validToken = tokenService.generateVerificationToken(signupRequestPojo.getEmail());
         Token token = new Token();
         token.setToken(validToken);
@@ -81,6 +85,7 @@ public class StaffServiceImpl implements StaffService {
         token.setPerson(person);
         tokenRepository.save(token);
 
+        //Create Email Verification message
         String subject = "Verify email address";
 
         String message =
@@ -93,11 +98,14 @@ public class StaffServiceImpl implements StaffService {
                         "</body> " +
                         "</html>";
 
+        //Build context path(URL) for email verification
         String url = "http://" + request.getServerName() + ":8080/api/v1/staff" + "/verify-registration?token=" + validToken;
         message = message.replace("[[TOKEN_URL]]", url);
 
+        //Send email to user's email address
         javaMailService.sendMailAlt(signupRequestPojo.getEmail(), subject, message);
 
+        //Build response Object
         SignupResponseDto signupResponseDto = SignupResponseDto.builder()
                         .firstName(person.getFirstName())
                         .lastName(person.getLastName())
@@ -108,16 +116,17 @@ public class StaffServiceImpl implements StaffService {
         return signupResponseDto;
     }
 
-
-
     @Override
     public String verifyRegistration(String token) {
+        //Check if token in db
         Token verificationToken = tokenRepository.findByToken(token).orElseThrow(
                 () -> new InvalidTokenException("Token Not Found"));
 
+        //if token expired throw exception
         if (verificationToken.getTokenStatus().equals(EXPIRED))
             throw new InvalidTokenException("Token already used");
 
+        //Save token
         verificationToken.getPerson().setVerificationStatus(true);
         verificationToken.getPerson().setActive(true);
         verificationToken.setTokenStatus(EXPIRED);
@@ -128,18 +137,23 @@ public class StaffServiceImpl implements StaffService {
     @Override
     public ApiResponse login(LoginRequestPojo loginRequest){
         try {
+            //Get user details from email
             UserDetails user = userDetailsService.loadUserByUsername(loginRequest.getEmail());
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
+            //Check if user has been verified from their email
             if(!user.isEnabled())
-                throw new UsernameNotFoundException("You have not been verified. Check your email to be verified!");
+                return new ApiResponse<>("You have not been verified. Check your email to be verified!",false, null, HttpStatus.UNAUTHORIZED);
+            //Check if user's account is active
             if (!user.isAccountNonLocked()){
                 return new ApiResponse<>("This account has been deactivated", false, null, HttpStatus.OK);
             }
+            //Check if user exists in db
             if (user == null){
                 return new ApiResponse<>("Email not found", false, null, HttpStatus.NOT_FOUND);
             }
+            //Authenticate user details
             if(authentication == null)
                 throw new InvalidCredentialsException("Invalid Email or Password");
             return new ApiResponse<>("Login Successful",
@@ -153,13 +167,16 @@ public class StaffServiceImpl implements StaffService {
 
     @Override
     public String resendVerificationToken(String email) throws EmailNotFoundException, IOException {
+        //Check if email exists in db
         boolean emailExists = personRepository.existsByEmail(email);
         if (!emailExists) {
             throw new EmailNotFoundException("Email not found");
         }
+        //Find user in db
         Person person = personRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("No user found with this email"));
 
+        //if user hasn't been verified resend verification email
         if (!person.getVerificationStatus()) {
             String validToken = tokenService.generateVerificationToken(email);
             Token token = new Token();
@@ -189,6 +206,7 @@ public class StaffServiceImpl implements StaffService {
             return "Verification token resent. Check your email";
 
         }else
+            //if user is verified throw exception
             throw new AlreadyExistsException("User is already verified");
     }
 }
