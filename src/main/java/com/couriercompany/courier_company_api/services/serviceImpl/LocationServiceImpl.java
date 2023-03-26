@@ -33,7 +33,7 @@ public class LocationServiceImpl implements LocationService {
     private final LocationRepository locationRepository;
     private final AddressRepository addressRepository;
     private final PersonService personService;
-    private static final String apiKey = "AIzaSyBfzOR99VFd9omgj1mz1cPEftM-lwjIt6Q";
+    private static final String apiKey = "";
     private static final double costPerKm = 1.0;
 
     @Override
