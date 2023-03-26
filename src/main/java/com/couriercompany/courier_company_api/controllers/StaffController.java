@@ -1,6 +1,7 @@
 package com.couriercompany.courier_company_api.controllers;
 
 import com.couriercompany.courier_company_api.exceptions.AlreadyExistsException;
+import com.couriercompany.courier_company_api.exceptions.EmailNotFoundException;
 import com.couriercompany.courier_company_api.pojos.SignupRequestPojo;
 import com.couriercompany.courier_company_api.services.StaffService;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,14 @@ public class StaffController {
         return new ResponseEntity<>("Registration Successful! Check your mail for activation link",HttpStatus.CREATED);
     }
 
-    @GetMapping("/verifyRegistration")
+    @GetMapping("/verify-registration")
     public ResponseEntity<String> verifyAccount(@RequestParam("token") String token){
         return new ResponseEntity<>(staffService.verifyRegistration(token), HttpStatus.OK);
     }
+
+    @GetMapping("/resend-verification-token")
+    public ResponseEntity<String> resendVerificationToken(@RequestParam("email") String email) throws EmailNotFoundException, IOException {
+        return new ResponseEntity<>(staffService.resendVerificationToken(email), HttpStatus.OK);
+    }
+
 }

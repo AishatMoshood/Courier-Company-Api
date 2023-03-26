@@ -31,7 +31,6 @@ public class TokenServiceImpl implements TokenService {
                 .claim("roles", roles)
                 .build();
         return this.jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
-
     }
 
     @Override

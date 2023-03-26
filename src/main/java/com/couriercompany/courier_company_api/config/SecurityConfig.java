@@ -28,8 +28,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import java.util.Collection;
 import java.util.Collections;
 
-import static com.couriercompany.courier_company_api.enums.Role.STAFF;
-
 
 @Configuration
 @EnableWebSecurity
@@ -38,8 +36,8 @@ import static com.couriercompany.courier_company_api.enums.Role.STAFF;
 public class SecurityConfig {
 
     private final String[] WHITE_LISTED_URLS = { "/", "/home", "index", "/css/*", "/js/*",
-            "/api/v1/auth/**","/v2/api-docs/**", "/v3/api-docs/**","/configuration/**",
-           "/webjars/**", "/api/v1/staff/signup","/api/v1/staff/verifyRegistration/**",
+            "/api/v1/auth/login","/v2/api-docs/**", "/v3/api-docs/**","/configuration/**",
+           "/webjars/**", "/api/v1/staff/signup","/api/v1/staff/verify-registration/**", "/api/v1/staff/resend-verification-token/**"
     };
     private final AppUserDetailsService appUserDetailsService;
     private static final String AUTHORITY_PREFIX = "ROLE_";
@@ -58,10 +56,8 @@ public class SecurityConfig {
             config.setMaxAge(3600L);
             return config;
         }).and().csrf(AbstractHttpConfigurer::disable)
-
                 .authorizeHttpRequests((auth) -> {
                 auth.antMatchers(WHITE_LISTED_URLS).permitAll()
-                        .antMatchers("/api/v1/staff/**").hasRole(STAFF.name())
                         .anyRequest().authenticated();
                 })
                 .oauth2ResourceServer(oauth2ResourceServer ->

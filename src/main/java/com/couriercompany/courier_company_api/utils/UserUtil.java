@@ -9,6 +9,7 @@ import java.util.Optional;
 
 
 public class UserUtil {
+
     @Bean
     public static Optional<String> extractEmailFromPrincipal() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

@@ -1,6 +1,7 @@
 package com.couriercompany.courier_company_api.services.serviceImpl;
 
 import com.couriercompany.courier_company_api.config.tokens.TokenService;
+import com.couriercompany.courier_company_api.config.userDetails.AppUserDetailsService;
 import com.couriercompany.courier_company_api.dtos.SignupResponseDto;
 import com.couriercompany.courier_company_api.entities.Person;
 import com.couriercompany.courier_company_api.entities.Staff;
@@ -9,16 +10,21 @@ import com.couriercompany.courier_company_api.enums.Role;
 import com.couriercompany.courier_company_api.exceptions.AlreadyExistsException;
 import com.couriercompany.courier_company_api.exceptions.EmailNotFoundException;
 import com.couriercompany.courier_company_api.exceptions.InvalidTokenException;
+import com.couriercompany.courier_company_api.pojos.LoginRequestPojo;
 import com.couriercompany.courier_company_api.pojos.SignupRequestPojo;
 import com.couriercompany.courier_company_api.repositories.PersonRepository;
 import com.couriercompany.courier_company_api.repositories.StaffRepository;
 import com.couriercompany.courier_company_api.repositories.TokenRepository;
 import com.couriercompany.courier_company_api.services.JavaMailService;
 import com.couriercompany.courier_company_api.services.StaffService;
+import com.couriercompany.courier_company_api.utils.ApiResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
+import org.apache.http.auth.InvalidCredentialsException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -41,6 +47,8 @@ public class StaffServiceImpl implements StaffService {
     private final JavaMailService javaMailService;
     private final TokenService tokenService;
     private final HttpServletRequest request;
+    private final AuthenticationManager authenticationManager;
+    private final AppUserDetailsService userDetailsService;
 
     @Override
     @Transactional
@@ -85,8 +93,7 @@ public class StaffServiceImpl implements StaffService {
                         "</body> " +
                         "</html>";
 
-        String url = "http://" + request.getServerName() + ":3000" + "/verifyRegistration?token=" + validToken;
-
+        String url = "http://" + request.getServerName() + ":8080/api/v1/staff" + "/verify-registration?token=" + validToken;
         message = message.replace("[[TOKEN_URL]]", url);
 
         javaMailService.sendMailAlt(signupRequestPojo.getEmail(), subject, message);
@@ -99,6 +106,49 @@ public class StaffServiceImpl implements StaffService {
                         .build();
 
         return signupResponseDto;
+    }
+
+
+
+    @Override
+    public String verifyRegistration(String token) {
+        Token verificationToken = tokenRepository.findByToken(token).orElseThrow(
+                () -> new InvalidTokenException("Token Not Found"));
+
+        if (verificationToken.getTokenStatus().equals(EXPIRED))
+            throw new InvalidTokenException("Token already used");
+
+        verificationToken.getPerson().setVerificationStatus(true);
+        verificationToken.getPerson().setActive(true);
+        verificationToken.setTokenStatus(EXPIRED);
+        tokenRepository.save(verificationToken);
+        return "Account verification successful";
+    }
+
+    @Override
+    public ApiResponse login(LoginRequestPojo loginRequest){
+        try {
+            UserDetails user = userDetailsService.loadUserByUsername(loginRequest.getEmail());
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+
+            if(!user.isEnabled())
+                throw new UsernameNotFoundException("You have not been verified. Check your email to be verified!");
+            if (!user.isAccountNonLocked()){
+                return new ApiResponse<>("This account has been deactivated", false, null, HttpStatus.OK);
+            }
+            if (user == null){
+                return new ApiResponse<>("Email not found", false, null, HttpStatus.NOT_FOUND);
+            }
+            if(authentication == null)
+                throw new InvalidCredentialsException("Invalid Email or Password");
+            return new ApiResponse<>("Login Successful",
+                    true, tokenService.generateToken(authentication), HttpStatus.OK);
+        } catch (InvalidCredentialsException e) {
+            return new ApiResponse<>("Invalid Credentials", false, null, HttpStatus.UNAUTHORIZED);
+        } catch (UsernameNotFoundException e) {
+            return new ApiResponse<>("Email not found", false, null, HttpStatus.NOT_FOUND);
+        }
     }
 
     @Override
@@ -121,7 +171,6 @@ public class StaffServiceImpl implements StaffService {
             String subject = "Verify email address";
 
             String message =
-
                     "<html> " +
                             "<body>" +
                             "<h2>Hi " + person.getFirstName() + " " + person.getLastName() +",</h2> <br>" +
@@ -132,7 +181,7 @@ public class StaffServiceImpl implements StaffService {
                             "</html>";
 
 
-            String url = "http://" + request.getServerName() + ":3000" + "/verifyRegistration?token=" + validToken;
+            String url = "http://" + request.getServerName() + ":8080/api/v1/staff" + "/verify-registration?token=" + validToken;
 
             message = message.replace("[[TOKEN_URL]]", url);
 
@@ -141,19 +190,5 @@ public class StaffServiceImpl implements StaffService {
 
         }else
             throw new AlreadyExistsException("User is already verified");
-    }
-
-    @Override
-    public String verifyRegistration(String token) {
-        Token verificationToken = tokenRepository.findByToken(token).orElseThrow(
-                () -> new InvalidTokenException("Token Not Found"));
-
-        if (verificationToken.getTokenStatus().equals(EXPIRED))
-            throw new InvalidTokenException("Token already used");
-
-        verificationToken.getPerson().setVerificationStatus(true);
-        verificationToken.setTokenStatus(EXPIRED);
-        tokenRepository.save(verificationToken);
-        return "Account verification successful";
     }
 }
