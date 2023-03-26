@@ -20,6 +20,7 @@ public class SignupRequestPojo {
     private String lastName;
 
     @NotBlank(message = "Email address is mandatory")
+    //The delivery company's domain name will replace gmail.com in the regex below
     @Email(message = "Please enter a valid staff email", regexp = "^(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)*gmail\\.com$")
     private String email;
 
